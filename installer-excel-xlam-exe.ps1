@@ -134,6 +134,10 @@ function Install-AddIn {
         Write-Log "설치를 시작합니다..."
         $progressBar.Value = 10
         
+        # Source and destination paths
+        $SourcePath = Join-Path $exePath "src"
+        $InstallPath = "$env:APPDATA\Microsoft\AddIns"
+        
         # Check source folder
         if (-not (Test-Path $SourcePath)) {
             Write-Log "[오류] src 폴더를 찾을 수 없습니다: $SourcePath"
@@ -145,9 +149,23 @@ function Install-AddIn {
             return
         }
         
-        $progressBar.Value = 30
-        # Check source files
+        # Unblock files in source directory
+        Write-Log "파일 차단 해제 중..."
         $sourceFiles = Get-ChildItem -Path $SourcePath -File
+        foreach ($file in $sourceFiles) {
+            try {
+                Unblock-File -Path $file.FullName -ErrorAction Stop
+                Write-Log "→ 파일 차단 해제 완료: $($file.Name)"
+            }
+            catch {
+                Write-Log "[경고] 파일 차단 해제 실패 ($($file.Name)): $_"
+            }
+        }
+        
+        # Continue with the rest of the installation process...
+        $progressBar.Value = 30
+        
+        # Check source files
         if ($sourceFiles.Count -eq 0) {
             Write-Log "[오류] src 폴더가 비어있습니다."
             [System.Windows.Forms.MessageBox]::Show(
